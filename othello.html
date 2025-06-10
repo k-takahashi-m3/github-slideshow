@@ -1,0 +1,621 @@
+---
+layout: default
+title: オセロゲーム
+---
+
+<div class="container">
+  <h1>オセロゲーム</h1>
+  
+  <div class="game-info">
+    <div id="turn-info">黒の番です</div>
+    <div id="score">黒: 2 | 白: 2</div>
+    <div class="controls">
+      <button id="reset-button">ゲームをリセット</button>
+      <button id="hint-button">ヒントを表示</button>
+      <select id="difficulty">
+        <option value="easy">初級</option>
+        <option value="medium" selected>中級</option>
+        <option value="hard">上級</option>
+      </select>
+      <label>
+        <input type="checkbox" id="vs-computer"> コンピュータと対戦
+      </label>
+    </div>
+  </div>
+  
+  <div id="board"></div>
+  
+  <div class="game-status">
+    <div id="status-message"></div>
+    <div id="last-move"></div>
+  </div>
+  
+  <div class="game-instructions">
+    <h2>遊び方</h2>
+    <p>オセロは2人用のボードゲームです。</p>
+    <ul>
+      <li>黒と白の石を交互に置いていきます。</li>
+      <li>石は必ず相手の石を挟むように置かなければなりません。</li>
+      <li>挟まれた石は自分の色に変わります。</li>
+      <li>石を置ける場所がなくなったらパスとなります。</li>
+      <li>両者とも石を置けなくなったらゲーム終了です。</li>
+      <li>より多くの石を持っているプレイヤーが勝者です。</li>
+    </ul>
+  </div>
+</div>
+
+<style>
+  .container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: Arial, sans-serif;
+  }
+  
+  .game-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  
+  #turn-info, #score {
+    margin-bottom: 10px;
+    font-size: 18px;
+    font-weight: bold;
+  }
+  
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 10px;
+  }
+  
+  button {
+    padding: 8px 16px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+  }
+  
+  button:hover {
+    background-color: #45a049;
+  }
+  
+  select {
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+  }
+  
+  #board {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(8, 1fr);
+    width: 400px;
+    height: 400px;
+    margin: 0 auto;
+    border: 2px solid #000;
+    background-color: #1e8449;
+  }
+  
+  .cell {
+    border: 1px solid #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+  }
+  
+  .cell:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+  
+  .disc {
+    width: 80%;
+    height: 80%;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+  }
+  
+  .black {
+    background-color: #000;
+  }
+  
+  .white {
+    background-color: #fff;
+  }
+  
+  .valid-move {
+    background-color: rgba(0, 255, 0, 0.3);
+  }
+  
+  .hint {
+    position: absolute;
+    width: 20%;
+    height: 20%;
+    background-color: rgba(255, 255, 0, 0.7);
+    border-radius: 50%;
+    z-index: 2;
+  }
+  
+  .last-move-marker {
+    position: absolute;
+    width: 20%;
+    height: 20%;
+    background-color: rgba(255, 0, 0, 0.7);
+    border-radius: 50%;
+    z-index: 1;
+  }
+  
+  .game-status {
+    margin-top: 15px;
+    text-align: center;
+  }
+  
+  #status-message {
+    font-weight: bold;
+    min-height: 20px;
+  }
+  
+  #last-move {
+    font-style: italic;
+    color: #666;
+    min-height: 20px;
+  }
+  
+  .game-instructions {
+    margin-top: 30px;
+  }
+  
+  @media (max-width: 600px) {
+    #board {
+      width: 320px;
+      height: 320px;
+    }
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const boardElement = document.getElementById('board');
+    const turnInfoElement = document.getElementById('turn-info');
+    const scoreElement = document.getElementById('score');
+    const statusMessageElement = document.getElementById('status-message');
+    const lastMoveElement = document.getElementById('last-move');
+    const resetButton = document.getElementById('reset-button');
+    const hintButton = document.getElementById('hint-button');
+    const difficultySelect = document.getElementById('difficulty');
+    const vsComputerCheckbox = document.getElementById('vs-computer');
+    
+    // ゲームの状態
+    let board = [];
+    let currentPlayer = 'black';
+    let validMoves = [];
+    let gameOver = false;
+    let showingHints = false;
+    let lastMove = null;
+    
+    // ボードの初期化
+    function initializeBoard() {
+      board = Array(8).fill().map(() => Array(8).fill(null));
+      
+      // 初期配置
+      board[3][3] = 'white';
+      board[3][4] = 'black';
+      board[4][3] = 'black';
+      board[4][4] = 'white';
+      
+      currentPlayer = 'black';
+      gameOver = false;
+      lastMove = null;
+      
+      renderBoard();
+      updateValidMoves();
+      updateGameInfo();
+      
+      statusMessageElement.textContent = 'ゲームスタート！';
+      lastMoveElement.textContent = '';
+    }
+    
+    // ボードの描画
+    function renderBoard() {
+      boardElement.innerHTML = '';
+      
+      for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+          const cell = document.createElement('div');
+          cell.className = 'cell';
+          cell.dataset.row = row;
+          cell.dataset.col = col;
+          
+          if (board[row][col]) {
+            const disc = document.createElement('div');
+            disc.className = `disc ${board[row][col]}`;
+            cell.appendChild(disc);
+          }
+          
+          // 最後に置いた場所をマーク
+          if (lastMove && lastMove.row === row && lastMove.col === col) {
+            const marker = document.createElement('div');
+            marker.className = 'last-move-marker';
+            cell.appendChild(marker);
+          }
+          
+          cell.addEventListener('click', () => handleCellClick(row, col));
+          boardElement.appendChild(cell);
+        }
+      }
+      
+      // 有効な手を表示
+      if (showingHints) {
+        validMoves.forEach(move => {
+          const cell = boardElement.querySelector(`[data-row="${move.row}"][data-col="${move.col}"]`);
+          if (cell) {
+            const hint = document.createElement('div');
+            hint.className = 'hint';
+            cell.appendChild(hint);
+          }
+        });
+      } else {
+        validMoves.forEach(move => {
+          const cell = boardElement.querySelector(`[data-row="${move.row}"][data-col="${move.col}"]`);
+          if (cell) {
+            cell.classList.add('valid-move');
+          }
+        });
+      }
+    }
+    
+    // 有効な手の更新
+    function updateValidMoves() {
+      validMoves = [];
+      
+      for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+          if (isValidMove(row, col, currentPlayer)) {
+            validMoves.push({ row, col });
+          }
+        }
+      }
+    }
+    
+    // 有効な手かどうかの判定
+    function isValidMove(row, col, player) {
+      if (board[row][col] !== null) {
+        return false;
+      }
+      
+      const opponent = player === 'black' ? 'white' : 'black';
+      const directions = [
+        [-1, -1], [-1, 0], [-1, 1],
+        [0, -1],           [0, 1],
+        [1, -1],  [1, 0],  [1, 1]
+      ];
+      
+      let isValid = false;
+      
+      for (const [dx, dy] of directions) {
+        let r = row + dx;
+        let c = col + dy;
+        let hasOpponentDisc = false;
+        
+        while (r >= 0 && r < 8 && c >= 0 && c < 8 && board[r][c] === opponent) {
+          r += dx;
+          c += dy;
+          hasOpponentDisc = true;
+        }
+        
+        if (hasOpponentDisc && r >= 0 && r < 8 && c >= 0 && c < 8 && board[r][c] === player) {
+          isValid = true;
+          break;
+        }
+      }
+      
+      return isValid;
+    }
+    
+    // セルクリック時の処理
+    function handleCellClick(row, col) {
+      if (gameOver || (vsComputerCheckbox.checked && currentPlayer === 'white')) {
+        return;
+      }
+      
+      if (!isValidMove(row, col, currentPlayer)) {
+        statusMessageElement.textContent = 'そこには置けません！';
+        return;
+      }
+      
+      makeMove(row, col);
+      
+      if (vsComputerCheckbox.checked && currentPlayer === 'white' && !gameOver) {
+        setTimeout(makeComputerMove, 500);
+      }
+    }
+    
+    // 石を置く
+    function makeMove(row, col) {
+      board[row][col] = currentPlayer;
+      lastMove = { row, col };
+      
+      const opponent = currentPlayer === 'black' ? 'white' : 'black';
+      const directions = [
+        [-1, -1], [-1, 0], [-1, 1],
+        [0, -1],           [0, 1],
+        [1, -1],  [1, 0],  [1, 1]
+      ];
+      
+      let totalFlipped = 0;
+      
+      for (const [dx, dy] of directions) {
+        let r = row + dx;
+        let c = col + dy;
+        let discsToFlip = [];
+        
+        while (r >= 0 && r < 8 && c >= 0 && c < 8 && board[r][c] === opponent) {
+          discsToFlip.push({ row: r, col: c });
+          r += dx;
+          c += dy;
+        }
+        
+        if (r >= 0 && r < 8 && c >= 0 && c < 8 && board[r][c] === currentPlayer) {
+          for (const disc of discsToFlip) {
+            board[disc.row][disc.col] = currentPlayer;
+            totalFlipped++;
+          }
+        }
+      }
+      
+      // 最後の手の情報を更新
+      const playerText = currentPlayer === 'black' ? '黒' : '白';
+      const position = `(${row+1},${col+1})`;
+      lastMoveElement.textContent = `${playerText}が${position}に置きました。${totalFlipped}個の石をひっくり返しました。`;
+      
+      // プレイヤー交代
+      currentPlayer = opponent;
+      updateValidMoves();
+      
+      // 有効な手がない場合はパス
+      if (validMoves.length === 0) {
+        currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
+        updateValidMoves();
+        
+        // 両者とも置けない場合はゲーム終了
+        if (validMoves.length === 0) {
+          endGame();
+        } else {
+          const passedPlayer = currentPlayer === 'black' ? '白' : '黒';
+          statusMessageElement.textContent = `${passedPlayer}はパスしました。${currentPlayer === 'black' ? '黒' : '白'}の番です。`;
+        }
+      } else {
+        statusMessageElement.textContent = '';
+      }
+      
+      renderBoard();
+      updateGameInfo();
+    }
+    
+    // コンピュータの手
+    function makeComputerMove() {
+      if (validMoves.length === 0 || gameOver) {
+        return;
+      }
+      
+      let bestMove;
+      const difficulty = difficultySelect.value;
+      
+      if (difficulty === 'easy') {
+        // 簡単: ランダムに手を選ぶ
+        bestMove = validMoves[Math.floor(Math.random() * validMoves.length)];
+      } else if (difficulty === 'medium') {
+        // 中級: 最も多くの石をひっくり返せる手を選ぶ
+        bestMove = getBestMoveByFlips();
+      } else {
+        // 上級: 角を優先し、その次に辺を優先する
+        bestMove = getStrategicMove();
+      }
+      
+      if (bestMove) {
+        makeMove(bestMove.row, bestMove.col);
+      }
+    }
+    
+    // 最も多くの石をひっくり返せる手を取得
+    function getBestMoveByFlips() {
+      let bestMove = null;
+      let maxFlips = -1;
+      
+      for (const move of validMoves) {
+        const flips = countFlips(move.row, move.col, currentPlayer);
+        if (flips > maxFlips) {
+          maxFlips = flips;
+          bestMove = move;
+        }
+      }
+      
+      return bestMove;
+    }
+    
+    // 戦略的な手を取得（角を優先、次に辺）
+    function getStrategicMove() {
+      // 角の座標
+      const corners = [
+        {row: 0, col: 0},
+        {row: 0, col: 7},
+        {row: 7, col: 0},
+        {row: 7, col: 7}
+      ];
+      
+      // 角の近くの危険な場所
+      const dangerousSpots = [
+        {row: 0, col: 1}, {row: 1, col: 0}, {row: 1, col: 1},
+        {row: 0, col: 6}, {row: 1, col: 6}, {row: 1, col: 7},
+        {row: 6, col: 0}, {row: 6, col: 1}, {row: 7, col: 1},
+        {row: 6, col: 6}, {row: 6, col: 7}, {row: 7, col: 6}
+      ];
+      
+      // 辺の座標（角を除く）
+      const edges = [];
+      for (let i = 1; i < 7; i++) {
+        edges.push({row: 0, col: i});
+        edges.push({row: 7, col: i});
+        edges.push({row: i, col: 0});
+        edges.push({row: i, col: 7});
+      }
+      
+      // 1. 角が取れるなら取る
+      for (const corner of corners) {
+        const cornerMove = validMoves.find(move => 
+          move.row === corner.row && move.col === corner.col
+        );
+        if (cornerMove) return cornerMove;
+      }
+      
+      // 2. 辺が取れるなら取る
+      for (const edge of edges) {
+        const edgeMove = validMoves.find(move => 
+          move.row === edge.row && move.col === edge.col
+        );
+        if (edgeMove) return edgeMove;
+      }
+      
+      // 3. 危険な場所を避ける
+      const safeMoves = validMoves.filter(move => 
+        !dangerousSpots.some(spot => 
+          move.row === spot.row && move.col === spot.col
+        )
+      );
+      
+      if (safeMoves.length > 0) {
+        // 安全な手の中で最も多くの石をひっくり返せるものを選ぶ
+        return getBestMoveFromList(safeMoves);
+      }
+      
+      // 4. 他に選択肢がなければ最も多くの石をひっくり返せる手を選ぶ
+      return getBestMoveByFlips();
+    }
+    
+    // 指定したリストから最も多くの石をひっくり返せる手を取得
+    function getBestMoveFromList(movesList) {
+      let bestMove = null;
+      let maxFlips = -1;
+      
+      for (const move of movesList) {
+        const flips = countFlips(move.row, move.col, currentPlayer);
+        if (flips > maxFlips) {
+          maxFlips = flips;
+          bestMove = move;
+        }
+      }
+      
+      return bestMove;
+    }
+    
+    // ひっくり返せる石の数を数える
+    function countFlips(row, col, player) {
+      if (board[row][col] !== null) {
+        return 0;
+      }
+      
+      const opponent = player === 'black' ? 'white' : 'black';
+      const directions = [
+        [-1, -1], [-1, 0], [-1, 1],
+        [0, -1],           [0, 1],
+        [1, -1],  [1, 0],  [1, 1]
+      ];
+      
+      let totalFlips = 0;
+      
+      for (const [dx, dy] of directions) {
+        let r = row + dx;
+        let c = col + dy;
+        let discsToFlip = 0;
+        
+        while (r >= 0 && r < 8 && c >= 0 && c < 8 && board[r][c] === opponent) {
+          discsToFlip++;
+          r += dx;
+          c += dy;
+        }
+        
+        if (r >= 0 && r < 8 && c >= 0 && c < 8 && board[r][c] === player) {
+          totalFlips += discsToFlip;
+        }
+      }
+      
+      return totalFlips;
+    }
+    
+    // 石の数を数える
+    function countDiscs() {
+      let blackCount = 0;
+      let whiteCount = 0;
+      
+      for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+          if (board[row][col] === 'black') {
+            blackCount++;
+          } else if (board[row][col] === 'white') {
+            whiteCount++;
+          }
+        }
+      }
+      
+      return { blackCount, whiteCount };
+    }
+    
+    // ゲーム情報の更新
+    function updateGameInfo() {
+      const { blackCount, whiteCount } = countDiscs();
+      scoreElement.textContent = `黒: ${blackCount} | 白: ${whiteCount}`;
+      
+      if (!gameOver) {
+        turnInfoElement.textContent = `${currentPlayer === 'black' ? '黒' : '白'}の番です`;
+      }
+    }
+    
+    // ゲーム終了処理
+    function endGame() {
+      gameOver = true;
+      const { blackCount, whiteCount } = countDiscs();
+      let winner;
+      
+      if (blackCount > whiteCount) {
+        winner = '黒の勝ち';
+      } else if (whiteCount > blackCount) {
+        winner = '白の勝ち';
+      } else {
+        winner = '引き分け';
+      }
+      
+      turnInfoElement.textContent = `ゲーム終了 - ${winner}!`;
+      statusMessageElement.textContent = `最終スコア: 黒 ${blackCount} - ${whiteCount} 白`;
+    }
+    
+    // リセットボタンのイベント
+    resetButton.addEventListener('click', initializeBoard);
+    
+    // ヒントボタンのイベント
+    hintButton.addEventListener('click', function() {
+      showingHints = !showingHints;
+      hintButton.textContent = showingHints ? 'ヒントを隠す' : 'ヒントを表示';
+      renderBoard();
+    });
+    
+    // コンピュータ対戦チェックボックスのイベント
+    vsComputerCheckbox.addEventListener('change', function() {
+      if (vsComputerCheckbox.checked && currentPlayer === 'white' && !gameOver) {
+        setTimeout(makeComputerMove, 500);
+      }
+    });
+    
+    // ゲーム開始
+    initializeBoard();
+  });
+</script>
+
