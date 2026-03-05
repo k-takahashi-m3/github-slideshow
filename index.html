@@ -1,13 +1,40 @@
----
-layout: presentation
----
-
-{% for post in site.posts reversed %}
-	{% include slide.html %}
-	<div class="page-break"></div>
-{% endfor %}
-{% unless site.simple-slideshow %}
-{% if site.overview %}
-<section id="overview" class="step" {% for attr in site.overview-data %} data-{{attr[0]}}="{{attr[1]}}"{% endfor %}></section>
-{% endif %}
-{% endunless %}
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>オセロゲーム</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>オセロゲーム</h1>
+        <div class="game-info">
+            <div class="player-info">
+                <div class="current-player">
+                    現在のプレイヤー: <span id="current-player">黒</span>
+                </div>
+                <div class="score">
+                    <div class="score-item">
+                        <span class="piece black"></span>
+                        <span id="black-score">2</span>
+                    </div>
+                    <div class="score-item">
+                        <span class="piece white"></span>
+                        <span id="white-score">2</span>
+                    </div>
+                </div>
+            </div>
+            <div class="game-controls">
+                <button id="reset-btn">リセット</button>
+                <button id="pass-btn" style="display: none;">パス</button>
+            </div>
+        </div>
+        <div class="game-board" id="game-board">
+            <!-- 8x8のボードがJavaScriptで生成されます -->
+        </div>
+        <div class="game-status" id="game-status"></div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

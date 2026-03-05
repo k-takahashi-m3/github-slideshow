@@ -1,0 +1,242 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.container {
+    background: white;
+    border-radius: 20px;
+    padding: 30px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    max-width: 600px;
+    width: 100%;
+}
+
+h1 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 20px;
+    font-size: 2.5em;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.game-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.player-info {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.current-player {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #333;
+}
+
+.score {
+    display: flex;
+    gap: 20px;
+}
+
+.score-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1.1em;
+    font-weight: bold;
+}
+
+.piece {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid #333;
+    display: inline-block;
+}
+
+.piece.black {
+    background-color: #000;
+}
+
+.piece.white {
+    background-color: #fff;
+}
+
+.game-controls {
+    display: flex;
+    gap: 10px;
+}
+
+button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 25px;
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    color: white;
+    font-size: 1em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+.game-board {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(8, 1fr);
+    gap: 2px;
+    background-color: #2d5016;
+    padding: 10px;
+    border-radius: 10px;
+    margin: 0 auto;
+    max-width: 480px;
+    aspect-ratio: 1;
+}
+
+.cell {
+    background-color: #4a7c59;
+    border: 1px solid #2d5016;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    transition: all 0.2s ease;
+    border-radius: 3px;
+}
+
+.cell:hover {
+    background-color: #5a8c69;
+    transform: scale(1.05);
+}
+
+.cell.valid-move {
+    background-color: #8fbc8f;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 0.7; }
+    50% { opacity: 1; }
+    100% { opacity: 0.7; }
+}
+
+.cell.valid-move::after {
+    content: '';
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.6);
+}
+
+.game-piece {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    border: 3px solid #333;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    font-size: 0.8em;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.game-piece.black {
+    background-color: #000;
+    color: white;
+}
+
+.game-piece.white {
+    background-color: #fff;
+    color: black;
+}
+
+.game-piece.flip {
+    animation: flip 0.6s ease-in-out;
+}
+
+@keyframes flip {
+    0% { transform: rotateY(0deg); }
+    50% { transform: rotateY(90deg); }
+    100% { transform: rotateY(0deg); }
+}
+
+.game-status {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 1.2em;
+    font-weight: bold;
+    min-height: 30px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.game-status.winner {
+    color: #e74c3c;
+    font-size: 1.5em;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.game-status.tie {
+    color: #f39c12;
+    font-size: 1.5em;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 600px) {
+    .container {
+        padding: 20px;
+    }
+    
+    .game-info {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    
+    .game-board {
+        max-width: 350px;
+    }
+    
+    .game-piece {
+        width: 30px;
+        height: 30px;
+        font-size: 0.7em;
+    }
+    
+    h1 {
+        font-size: 2em;
+    }
+}
